@@ -1,0 +1,132 @@
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QRadioButton, QPushButton
+from PyQt6.QtGui import QIcon
+from PyQt6.QtCore import Qt
+
+class QuizApp(QWidget):
+    def __init__(self, questions):
+        super().__init__()
+        self.questions = questions
+        self.selected_topic = None
+        self.score = 0
+        self.current_question = 0
+        self.init_ui()
+
+    def init_ui(self):
+        self.setWindowTitle("Quiz App")
+        self.setWindowIcon(QIcon("badhon.png"))
+        self.setStyleSheet("background-color: #f5f5f5; font-size: 16px;")
+
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+
+        topic_label = QLabel("Select a topic:")
+        topic_label.setStyleSheet("font-size: 20px; font-weight: bold;")
+        self.layout.addWidget(topic_label)
+
+        self.topic_buttons = []
+        for i, topic in enumerate(self.questions.keys()):
+            topic_button = QRadioButton(topic)
+            topic_button.setObjectName(str(i))
+            topic_button.toggled.connect(self.on_topic_button_toggled)
+            self.layout.addWidget(topic_button)
+            self.topic_buttons.append(topic_button)
+
+        start_button = QPushButton("Start Quiz")
+        start_button.setStyleSheet("background-color: #4caf50; color: white; font-size: 20px; padding: 10px 20px;")
+        start_button.clicked.connect(self.start_quiz)
+        self.layout.addWidget(start_button)
+
+    def on_topic_button_toggled(self):
+        topic_button = self.sender()
+        if topic_button.isChecked():
+            self.selected_topic = list(self.questions.keys())[int(topic_button.objectName())]
+
+    def start_quiz(self):
+        if self.selected_topic:
+            self.clear_layout()
+            self.show_question()
+
+    def show_question(self):
+        question_data = self.questions[self.selected_topic]
+        question = question_data[self.current_question]["question"]
+        options = question_data[self.current_question]["options"]
+
+        question_label = QLabel(question)
+        question_label.setStyleSheet("font-size: 24px; font-weight: bold; margin-bottom: 20px;")
+        self.layout.addWidget(question_label)
+
+        self.radio_buttons = []
+        for i, option in enumerate(options):
+            radio_button = QRadioButton(option)
+            radio_button.setChecked(False)
+            radio_button.setObjectName(str(i))
+            radio_button.toggled.connect(self.on_radio_button_toggled)
+            self.layout.addWidget(radio_button)
+            self.radio_buttons.append(radio_button)
+
+        submit_button = QPushButton("Submit")
+        submit_button.setStyleSheet("background-color: #2196f3; color: white; font-size: 20px; padding: 10px 20px;")
+        submit_button.clicked.connect(self.submit_answer)
+        self.layout.addWidget(submit_button)
+
+    def clear_layout(self):
+        while self.layout.count():
+            child = self.layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+
+    def on_radio_button_toggled(self):
+        radio_button = self.sender()
+        if radio_button.isChecked():
+            self.selected_option = int(radio_button.objectName())
+
+    def submit_answer(self):
+        question_data = self.questions[self.selected_topic]
+        if self.selected_option == question_data[self.current_question]["answer"]:
+            self.score += 1
+        self.current_question += 1
+        if self.current_question < len(question_data):
+            self.clear_layout()
+            self.show_question()
+        else:
+            self.show_score()
+
+    def show_score(self):
+        self.clear_layout()
+
+        score_label = QLabel(f"You scored {self.score} out of {len(self.questions[self.selected_topic])}.")
+        score_label.setStyleSheet("font-size: 24px; font-weight: bold; margin-bottom: 20px;")
+        self.layout.addWidget(score_label)
+
+
+if __name__ == "__main__":
+    app = QApplication([])
+    questions = {
+        "Geography": [
+            {
+                "question": "What is the capital of France?",
+                "options": ["London", "Paris", "Rome", "Berlin"],
+                "answer": 1
+            },
+            {
+                "question": "What is the capital of Canada?",
+                "options": ["Toronto", "Vancouver", "Ottawa", "Montreal"],
+                "answer": 2
+            }
+        ],
+        "Science": [
+            {
+                "question": "What is the chemical symbol for water?",
+                "options": ["H2O", "CO2", "O2", "NaCl"],
+                "answer": 0
+            },
+            {
+                "question": "What is the largest organ in the human body?",
+                "options": ["Liver", "Heart", "Skin", "Brain"],
+                "answer": 2
+            }
+        ]
+    }
+    quiz_app = QuizApp(questions)
+    quiz_app.show()
+    app.exec()
